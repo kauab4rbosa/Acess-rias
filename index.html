@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contatos RH — Acessórias</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container { max-width: 760px; margin: 0 auto; }
+
+        header { text-align: center; margin-bottom: 2rem; }
+        header h1 { font-size: 1.6rem; font-weight: 700; color: #b91c1c; }
+        header p { margin-top: .35rem; font-size: .9rem; color: #555; }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.75rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,.07);
+            margin-bottom: 1.5rem;
+        }
+        .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1.1rem; color: #b91c1c; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+        label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: .3rem; color: #444; }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: .6rem .85rem;
+            border: 1.5px solid #ddd;
+            border-radius: 7px;
+            font-size: .92rem;
+            transition: border-color .2s;
+        }
+        input:focus { outline: none; border-color: #b91c1c; }
+
+        .token-row { position: relative; }
+        .token-row input { padding-right: 2.5rem; }
+        .toggle-eye {
+            position: absolute;
+            right: .7rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #888;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .save-token {
+            font-size: .78rem;
+            color: #666;
+            margin-top: .3rem;
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+        }
+        .save-token input { width: auto; }
+
+        button[type="submit"] {
+            background: #b91c1c;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            padding: .65rem 1.8rem;
+            font-size: .95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        button[type="submit"]:hover { background: #991b1b; }
+        button[type="submit"]:disabled { background: #e5a0a0; cursor: not-allowed; }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .alert {
+            padding: .85rem 1.1rem;
+            border-radius: 8px;
+            margin-bottom: 1.2rem;
+            font-size: .9rem;
+        }
+        .alert-error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+        .alert-info  { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+
+        .empresa-nome { font-size: 1.15rem; font-weight: 700; color: #111; }
+        .empresa-sub  { font-size: .85rem; color: #666; margin-top: .2rem; }
+
+        .badge {
+            display: inline-block;
+            padding: .15rem .55rem;
+            border-radius: 999px;
+            font-size: .75rem;
+            font-weight: 600;
+            margin-left: .4rem;
+        }
+        .badge-green { background: #dcfce7; color: #166534; }
+        .badge-red   { background: #fee2e2; color: #991b1b; }
+
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th {
+            text-align: left;
+            padding: .55rem .75rem;
+            background: #fafafa;
+            border-bottom: 2px solid #eee;
+            font-size: .8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+        td { padding: .6rem .75rem; border-bottom: 1px solid #f0f0f0; color: #222; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafafa; }
+        .highlight-row td { background: #fff7ed; }
+
+        .email-copy {
+            font-family: 'Courier New', monospace;
+            font-size: .85rem;
+            background: #f3f4f6;
+            padding: .15rem .4rem;
+            border-radius: 4px;
+            cursor: pointer;
+            user-select: all;
+            position: relative;
+        }
+        .email-copy:active::after {
+            content: 'copiado!';
+            position: absolute;
+            top: -1.5rem;
+            left: 0;
+            font-size: .7rem;
+            background: #333;
+            color: #fff;
+            padding: .1rem .4rem;
+            border-radius: 4px;
+        }
+
+        .empty { text-align: center; padding: 1.5rem; color: #888; font-size: .88rem; }
+
+        #results { display: none; }
+
+        footer { text-align: center; font-size: .78rem; color: #aaa; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <header>
+        <h1>Contatos RH por CNPJ</h1>
+        <p>Consulte os e-mails dos responsáveis por <strong>RH - Folha</strong> e <strong>RH - Impostos</strong></p>
+    </header>
+
+    <div class="card">
+        <h2>🔍 Consultar empresa</h2>
+        <form id="searchForm">
+            <div class="form-row">
+                <div>
+                    <label for="cnpj">CNPJ / CPF da empresa</label>
+                    <input type="text" id="cnpj" placeholder="00.000.000/0000-00" required>
+                </div>
+                <div>
+                    <label for="token">Token da API</label>
+                    <div class="token-row">
+                        <input type="password" id="token" placeholder="secret_key" required>
+                        <button type="button" class="toggle-eye" onclick="toggleToken()">👁</button>
+                    </div>
+                    <label class="save-token">
+                        <input type="checkbox" id="saveToken"> Lembrar token neste navegador
+                    </label>
+                </div>
+            </div>
+            <button type="submit" id="btnBuscar">
+                <span class="spinner" id="spinner"></span>
+                Buscar
+            </button>
+        </form>
+    </div>
+
+    <div id="alertBox"></div>
+
+    <div id="results">
+        <div class="card" id="cardEmpresa"></div>
+        <div class="card" id="cardRH"></div>
+        <div class="card" id="cardContatos" style="display:none"></div>
+        <div class="card" id="cardTodosDptos" style="display:none"></div>
+    </div>
+
+    <footer>Integração com api.acessorias.com — limite de 100 req/min</footer>
+</div>
+
+<script>
+    const $ = id => document.getElementById(id);
+
+    // Restore saved token
+    const saved = localStorage.getItem('acessorias_token');
+    if (saved) {
+        $('token').value = saved;
+        $('saveToken').checked = true;
+    }
+
+    function toggleToken() {
+        const el = $('token');
+        el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function setLoading(on) {
+        $('spinner').style.display = on ? 'block' : 'none';
+        $('btnBuscar').disabled = on;
+        $('btnBuscar').lastChild.textContent = on ? ' Buscando…' : ' Buscar';
+    }
+
+    function showAlert(msg, type = 'error') {
+        $('alertBox').innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+
+    function clearAlert() { $('alertBox').innerHTML = ''; }
+
+    function esc(s) {
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function emailCell(email) {
+        if (!email) return '<span style="color:#aaa">—</span>';
+        return `<span class="email-copy" title="Clique para copiar" onclick="copyEmail(this)">${esc(email)}</span>`;
+    }
+
+    function copyEmail(el) {
+        navigator.clipboard.writeText(el.textContent).catch(() => {});
+    }
+
+    function isRH(nome) {
+        const n = (nome || '').toLowerCase();
+        return n.includes('rh') || n.includes('folha') || n.includes('imposto') || n.includes('imposto');
+    }
+
+    $('searchForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        clearAlert();
+        $('results').style.display = 'none';
+
+        const cnpj  = $('cnpj').value.trim().replace(/\D/g, '');
+        const token = $('token').value.trim();
+
+        if (!cnpj || !token) { showAlert('Preencha o CNPJ e o Token.'); return; }
+
+        if ($('saveToken').checked) {
+            localStorage.setItem('acessorias_token', token);
+        } else {
+            localStorage.removeItem('acessorias_token');
+        }
+
+        setLoading(true);
+
+        try {
+            const url = `https://api.acessorias.com/companies/${encodeURIComponent(cnpj)}/?contacts&departments`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (res.status === 401) { showAlert('Token inválido ou sem permissão (401).'); return; }
+            if (res.status === 404) { showAlert('Empresa não encontrada para o CNPJ informado (404).'); return; }
+            if (res.status === 204) { showAlert('Nenhum dado retornado pela API (204).'); return; }
+            if (res.status === 429) { showAlert('Limite de requisições atingido. Aguarde um momento (429).'); return; }
+            if (!res.ok) { showAlert(`Erro da API (HTTP ${res.status}).`); return; }
+
+            const data = await res.json();
+            renderResults(data);
+
+        } catch (err) {
+            showAlert('Falha na requisição. Verifique sua conexão ou se a API permite acesso externo (CORS).');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    });
+
+    function renderResults(data) {
+        // Empresa
+        const statusClass = (data.Status || '') === 'Ativa' ? 'badge-green' : 'badge-red';
+        $('cardEmpresa').innerHTML = `
+            <div class="empresa-nome">
+                ${esc(data.Razao)}
+                <span class="badge ${statusClass}">${esc(data.Status)}</span>
+            </div>
+            <div class="empresa-sub">
+                ${esc(data.Fantasia)} &nbsp;·&nbsp; ${esc(data.Identificador)}
+                ${data.Regime ? '&nbsp;·&nbsp; ' + esc(data.Regime) : ''}
+            </div>`;
+
+        // RH departments
+        const deptos = data.Departamentos || [];
+        const rhDeptos = deptos.filter(d => isRH(d.Nome));
+
+        let rhHTML = '<h2>👥 Responsáveis — RH Folha & RH Impostos</h2>';
+        if (rhDeptos.length === 0) {
+            rhHTML += '<div class="alert alert-info">Nenhum departamento com "RH", "Folha" ou "Imposto" encontrado nesta empresa.</div>';
+        } else {
+            rhHTML += `<table>
+                <thead><tr><th>Departamento</th><th>Responsável</th><th>E-mail</th></tr></thead>
+                <tbody>
+                ${rhDeptos.map(d => `
+                    <tr class="highlight-row">
+                        <td>${esc(d.Nome)}</td>
+                        <td>${esc(d.RespNome) || '—'}</td>
+                        <td>${emailCell(d.RespEmail)}</td>
+                    </tr>`).join('')}
+                </tbody></table>`;
+        }
+        $('cardRH').innerHTML = rhHTML;
+
+        // Contacts
+        const contatos = data.ContatosNaEmpresa || [];
+        if (contatos.length > 0) {
+            $('cardContatos').style.display = 'block';
+            $('cardContatos').innerHTML = `
+                <h2>📋 Contatos cadastrados</h2>
+                <p style="font-size:.82rem;color:#888;margin-bottom:1rem;">A API retorna todos os contatos da empresa sem filtro por departamento individual.</p>
+                <table>
+                    <thead><tr><th>Nome</th><th>E-mail</th><th>Celular</th></tr></thead>
+                    <tbody>
+                    ${contatos.map(c => `
+                        <tr>
+                            <td>${esc(c.Nome)}</td>
+                            <td>${emailCell(c['E-mail'])}</td>
+                            <td>${esc(c.Celular) || '—'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        // All departments (collapsible)
+        if (deptos.length > 0) {
+            $('cardTodosDptos').style.display = 'block';
+            $('cardTodosDptos').innerHTML = `
+                <details>
+                    <summary style="cursor:pointer;font-size:.9rem;font-weight:600;color:#555;">
+                        Todos os departamentos (${deptos.length})
+                    </summary>
+                    <table style="margin-top:1rem;">
+                        <thead><tr><th>ID</th><th>Departamento</th><th>Responsável</th><th>E-mail</th></tr></thead>
+                        <tbody>
+                        ${deptos.map(d => `
+                            <tr>
+                                <td style="color:#aaa">${esc(d.ID)}</td>
+                                <td>${esc(d.Nome)}</td>
+                                <td>${esc(d.RespNome) || '—'}</td>
+                                <td>${emailCell(d.RespEmail)}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </details>`;
+        }
+
+        $('results').style.display = 'block';
+    }
+</script>
+</body>
+</html>
