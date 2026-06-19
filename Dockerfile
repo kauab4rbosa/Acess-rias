@@ -1,7 +1,11 @@
-FROM php:8.2-apache
+FROM python:3.12-slim
 
-RUN docker-php-ext-install curl 2>/dev/null || true
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY index.php /var/www/html/index.php
+COPY app.py .
+COPY templates/ templates/
 
-RUN a2enmod rewrite
+EXPOSE 8080
+CMD ["python", "app.py"]
