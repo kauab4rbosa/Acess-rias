@@ -1,8 +1,10 @@
+import json
 import re
 import threading
+import urllib.request
+import urllib.error
 import tkinter as tk
 from tkinter import ttk, messagebox
-import requests
 
 API_BASE = "https://api.acessorias.com"
 RH_KEYWORDS = ("rh", "folha", "imposto")
@@ -16,248 +18,227 @@ def is_rh_dept(name: str) -> bool:
     return any(kw in name.lower() for kw in RH_KEYWORDS)
 
 
-def fetch_company(identifier: str, token: str):
+def fetch_company(identifier: str, token: str) -> dict:
     url = f"{API_BASE}/companies/{identifier}/?contacts&departments"
-    res = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=15)
-    res.raise_for_status()
-    return res.json()
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode())
 
 
 class App(tk.Tk):
-    RED   = "#b91c1c"
-    LIGHT = "#f0f2f5"
-    WHITE = "#ffffff"
+    RED       = "#b91c1c"
+    LIGHT     = "#f0f2f5"
+    WHITE     = "#ffffff"
     ORANGE_BG = "#fff7ed"
-    FONT  = ("Segoe UI", 10)
-    FONT_BOLD = ("Segoe UI", 10, "bold")
 
     def __init__(self):
         super().__init__()
         self.title("Contatos RH — Acessórias")
-        self.geometry("820x620")
-        self.minsize(640, 480)
+        self.geometry("860x580")
+        self.minsize(660, 440)
         self.configure(bg=self.LIGHT)
         self._build_ui()
 
-    # ── Build UI ────────────────────────────────────────────────────────────
+    # ── UI ──────────────────────────────────────────────────────────────────
 
     def _build_ui(self):
         style = ttk.Style(self)
         style.theme_use("clam")
-        style.configure("TLabel",  background=self.LIGHT, font=self.FONT)
-        style.configure("TButton", font=self.FONT_BOLD, padding=6)
-        style.configure("TEntry",  font=self.FONT, padding=4)
-        style.configure("Red.TButton", foreground="white", background=self.RED,
-                        font=self.FONT_BOLD)
-        style.map("Red.TButton", background=[("active", "#991b1b")])
-        style.configure("Treeview", font=self.FONT, rowheight=26)
-        style.configure("Treeview.Heading", font=self.FONT_BOLD,
+        style.configure("TLabel",  background=self.LIGHT, font=("Segoe UI", 10))
+        style.configure("TEntry",  font=("Segoe UI", 10), padding=4)
+        style.configure("Treeview", font=("Segoe UI", 10), rowheight=26)
+        style.configure("Treeview.Heading",
+                        font=("Segoe UI", 10, "bold"),
                         background="#f3f4f6", foreground="#444")
-        style.map("Treeview", background=[("selected", "#fde68a")],
+        style.map("Treeview",
+                  background=[("selected", "#fde68a")],
                   foreground=[("selected", "#000")])
 
-        # ── Header
-        hdr = tk.Frame(self, bg=self.RED, pady=14)
+        # Header
+        hdr = tk.Frame(self, bg=self.RED, pady=12)
         hdr.pack(fill="x")
-        tk.Label(hdr, text="Contatos RH por CNPJ", bg=self.RED, fg="white",
+        tk.Label(hdr, text="Contatos RH por CNPJ",
+                 bg=self.RED, fg="white",
                  font=("Segoe UI", 14, "bold")).pack()
-        tk.Label(hdr, text="Busca responsáveis de RH - Folha e RH - Impostos",
-                 bg=self.RED, fg="#fca5a5", font=("Segoe UI", 9)).pack()
+        tk.Label(hdr, text="Responsáveis por RH - Folha e RH - Impostos",
+                 bg=self.RED, fg="#fca5a5",
+                 font=("Segoe UI", 9)).pack()
 
-        # ── Form
-        form = tk.Frame(self, bg=self.WHITE, padx=20, pady=16)
-        form.pack(fill="x", padx=20, pady=(16, 0))
-
-        tk.Label(form, text="CNPJ / CPF", bg=self.WHITE,
-                 font=self.FONT_BOLD).grid(row=0, column=0, sticky="w")
-        tk.Label(form, text="Token da API", bg=self.WHITE,
-                 font=self.FONT_BOLD).grid(row=0, column=1, sticky="w", padx=(16, 0))
-
-        self.cnpj_var  = tk.StringVar()
-        self.token_var = tk.StringVar()
-        self.show_token = tk.BooleanVar(value=False)
-
-        cnpj_entry = ttk.Entry(form, textvariable=self.cnpj_var, width=28)
-        cnpj_entry.grid(row=1, column=0, sticky="ew", pady=(4, 0))
-        cnpj_entry.bind("<Return>", lambda _: self._start_search())
-
-        token_frame = tk.Frame(form, bg=self.WHITE)
-        token_frame.grid(row=1, column=1, sticky="ew", padx=(16, 0), pady=(4, 0))
-        self.token_entry = ttk.Entry(token_frame, textvariable=self.token_var,
-                                     show="•", width=30)
-        self.token_entry.pack(side="left", fill="x", expand=True)
-        self.token_entry.bind("<Return>", lambda _: self._start_search())
-        tk.Button(token_frame, text="👁", relief="flat", bg=self.WHITE, cursor="hand2",
-                  command=self._toggle_token).pack(side="left", padx=(4, 0))
-
+        # Form
+        form = tk.Frame(self, bg=self.WHITE, padx=20, pady=14)
+        form.pack(fill="x", padx=20, pady=(14, 0))
         form.columnconfigure(0, weight=1)
         form.columnconfigure(1, weight=1)
 
-        btn_frame = tk.Frame(form, bg=self.WHITE)
-        btn_frame.grid(row=2, column=0, columnspan=2, sticky="w", pady=(12, 0))
-        self.btn = ttk.Button(btn_frame, text="Buscar", style="Red.TButton",
+        tk.Label(form, text="CNPJ / CPF", bg=self.WHITE,
+                 font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky="w")
+        tk.Label(form, text="Token da API", bg=self.WHITE,
+                 font=("Segoe UI", 9, "bold")).grid(row=0, column=1, sticky="w", padx=(14, 0))
+
+        self.cnpj_var  = tk.StringVar()
+        self.token_var = tk.StringVar()
+
+        cnpj_e = ttk.Entry(form, textvariable=self.cnpj_var, width=28)
+        cnpj_e.grid(row=1, column=0, sticky="ew", pady=(3, 0))
+        cnpj_e.bind("<Return>", lambda _: self._start_search())
+
+        tok_frame = tk.Frame(form, bg=self.WHITE)
+        tok_frame.grid(row=1, column=1, sticky="ew", padx=(14, 0), pady=(3, 0))
+
+        self._tok_entry = ttk.Entry(tok_frame, textvariable=self.token_var, show="•", width=32)
+        self._tok_entry.pack(side="left", fill="x", expand=True)
+        self._tok_entry.bind("<Return>", lambda _: self._start_search())
+
+        tk.Button(tok_frame, text="👁", relief="flat", bg=self.WHITE,
+                  cursor="hand2", font=("Segoe UI", 11),
+                  command=self._toggle_token).pack(side="left", padx=(4, 0))
+
+        btn_row = tk.Frame(form, bg=self.WHITE)
+        btn_row.grid(row=2, column=0, columnspan=2, sticky="w", pady=(10, 0))
+
+        self._btn = tk.Button(btn_row, text="  Buscar  ",
+                              bg=self.RED, fg="white", relief="flat",
+                              font=("Segoe UI", 10, "bold"), cursor="hand2",
+                              activebackground="#991b1b", activeforeground="white",
                               command=self._start_search)
-        self.btn.pack(side="left")
-        self.status_lbl = tk.Label(btn_frame, text="", bg=self.WHITE,
-                                   fg="#888", font=("Segoe UI", 9))
-        self.status_lbl.pack(side="left", padx=10)
+        self._btn.pack(side="left")
 
-        # ── Notebook
+        self._status = tk.Label(btn_row, text="", bg=self.WHITE,
+                                fg="#888", font=("Segoe UI", 9))
+        self._status.pack(side="left", padx=10)
+
+        # Notebook
         nb = ttk.Notebook(self)
-        nb.pack(fill="both", expand=True, padx=20, pady=12)
+        nb.pack(fill="both", expand=True, padx=20, pady=10)
 
-        self.tab_rh       = self._make_tab(nb, "👥 RH - Folha & Impostos")
-        self.tab_contatos = self._make_tab(nb, "📋 Contatos da Empresa")
-        self.tab_deptos   = self._make_tab(nb, "🏢 Todos os Departamentos")
+        self._tree_rh       = self._make_tab(nb, "👥 RH",
+            ("Departamento", "Responsável", "E-mail"), (220, 180, 280))
+        self._tree_contatos = self._make_tab(nb, "📋 Contatos",
+            ("Nome", "E-mail", "Celular"), (200, 270, 150))
+        self._tree_deptos   = self._make_tab(nb, "🏢 Departamentos",
+            ("ID", "Departamento", "Responsável", "E-mail"), (45, 200, 180, 240))
 
-        nb.add(self.tab_rh,       text="👥 RH")
-        nb.add(self.tab_contatos, text="📋 Contatos")
-        nb.add(self.tab_deptos,   text="🏢 Departamentos")
+        hint = "Duplo clique → copia o e-mail"
+        self._tree_rh.bind("<Double-1>",
+                           lambda _: self._copy_col(self._tree_rh, 2))
+        self._tree_contatos.bind("<Double-1>",
+                                 lambda _: self._copy_col(self._tree_contatos, 1))
+        self._tree_deptos.bind("<Double-1>",
+                               lambda _: self._copy_col(self._tree_deptos, 3))
 
-        # Trees
-        self.tree_rh = self._make_tree(
-            self.tab_rh,
-            ("Departamento", "Responsável", "E-mail"),
-            (220, 180, 260),
-        )
-        self.tree_contatos = self._make_tree(
-            self.tab_contatos,
-            ("Nome", "E-mail", "Celular"),
-            (200, 260, 160),
-        )
-        self.tree_deptos = self._make_tree(
-            self.tab_deptos,
-            ("ID", "Departamento", "Responsável", "E-mail"),
-            (50, 200, 180, 240),
-        )
+        tk.Label(self, text=hint, bg=self.LIGHT, fg="#aaa",
+                 font=("Segoe UI", 8)).pack(anchor="e", padx=22, pady=(0, 6))
 
-        # Info labels
-        self.info_rh = tk.Label(self.tab_rh, text="", bg=self.WHITE,
-                                font=("Segoe UI", 9), fg="#888")
-        self.info_rh.pack(side="bottom", anchor="w", padx=8, pady=4)
-
-        # Copy hint
-        for tab in (self.tab_rh, self.tab_contatos, self.tab_deptos):
-            tk.Label(tab, text="Duplo clique em uma linha para copiar o e-mail",
-                     bg=self.WHITE, fg="#aaa", font=("Segoe UI", 8)).pack(
-                         side="bottom", anchor="e", padx=8)
-
-        self.tree_rh.bind("<Double-1>",       lambda e: self._copy_email(self.tree_rh, 2))
-        self.tree_contatos.bind("<Double-1>", lambda e: self._copy_email(self.tree_contatos, 1))
-        self.tree_deptos.bind("<Double-1>",   lambda e: self._copy_email(self.tree_deptos, 3))
-
-    def _make_tab(self, parent, text):
-        f = tk.Frame(parent, bg=self.WHITE)
-        return f
-
-    def _make_tree(self, parent, cols, widths):
-        frame = tk.Frame(parent, bg=self.WHITE)
-        frame.pack(fill="both", expand=True, padx=8, pady=8)
+    def _make_tab(self, nb, label, cols, widths):
+        frame = tk.Frame(nb, bg=self.WHITE)
+        nb.add(frame, text=label)
 
         tree = ttk.Treeview(frame, columns=cols, show="headings", selectmode="browse")
         for col, w in zip(cols, widths):
             tree.heading(col, text=col)
-            tree.column(col, width=w, minwidth=60)
+            tree.column(col, width=w, minwidth=50)
 
         vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=vsb.set)
         vsb.pack(side="right", fill="y")
-        tree.pack(fill="both", expand=True)
+        tree.pack(fill="both", expand=True, padx=6, pady=6)
         return tree
 
     # ── Actions ─────────────────────────────────────────────────────────────
 
     def _toggle_token(self):
-        self.show_token.set(not self.show_token.get())
-        self.token_entry.config(show="" if self.show_token.get() else "•")
+        self._tok_entry.config(
+            show="" if self._tok_entry.cget("show") == "•" else "•"
+        )
 
-    def _copy_email(self, tree, col_index):
+    def _copy_col(self, tree, col):
         sel = tree.selection()
         if not sel:
             return
-        values = tree.item(sel[0], "values")
-        if col_index < len(values) and values[col_index]:
+        val = tree.item(sel[0], "values")
+        if col < len(val) and val[col] and val[col] != "—":
             self.clipboard_clear()
-            self.clipboard_append(values[col_index])
-            self._set_status(f"E-mail copiado: {values[col_index]}")
+            self.clipboard_append(val[col])
+            self._set_status(f"Copiado: {val[col]}", "#166534")
 
     def _set_status(self, msg, color="#888"):
-        self.status_lbl.config(text=msg, fg=color)
+        self._status.config(text=msg, fg=color)
+
+    def _clear(self):
+        for t in (self._tree_rh, self._tree_contatos, self._tree_deptos):
+            t.delete(*t.get_children())
 
     def _start_search(self):
         cnpj  = self.cnpj_var.get().strip()
         token = self.token_var.get().strip()
-
         if not cnpj or not token:
             messagebox.showwarning("Atenção", "Preencha o CNPJ/CPF e o Token.")
             return
-
-        self._clear_trees()
-        self.btn.state(["disabled"])
+        self._clear()
+        self._btn.config(state="disabled")
         self._set_status("Buscando…")
-        threading.Thread(target=self._search, args=(cnpj, token), daemon=True).start()
+        threading.Thread(target=self._run, args=(cnpj, token), daemon=True).start()
 
-    def _search(self, cnpj, token):
-        identifier = clean_identifier(cnpj)
+    def _run(self, cnpj, token):
         try:
-            data = fetch_company(identifier, token)
+            data = fetch_company(clean_identifier(cnpj), token)
             self.after(0, self._populate, data)
-        except requests.exceptions.HTTPError as e:
-            code = e.response.status_code
-            msgs = {401: "Token inválido (401).", 404: "CNPJ não encontrado (404).",
-                    429: "Limite de requisições (429). Aguarde."}
-            self.after(0, self._show_error, msgs.get(code, f"Erro HTTP {code}."))
-        except requests.exceptions.ConnectionError:
-            self.after(0, self._show_error, "Sem conexão com a API.")
-        except requests.exceptions.Timeout:
-            self.after(0, self._show_error, "Timeout — API demorou demais.")
-        except Exception as exc:
-            self.after(0, self._show_error, str(exc))
+        except urllib.error.HTTPError as e:
+            msgs = {401: "Token inválido (401).",
+                    404: "CNPJ não encontrado (404).",
+                    429: "Limite de requisições (429). Aguarde.",
+                    204: "Sem conteúdo para este CNPJ (204)."}
+            self.after(0, self._error, msgs.get(e.code, f"Erro HTTP {e.code}."))
+        except urllib.error.URLError as e:
+            self.after(0, self._error, f"Sem conexão: {e.reason}")
+        except TimeoutError:
+            self.after(0, self._error, "Timeout — API demorou demais.")
+        except Exception as e:
+            self.after(0, self._error, str(e))
         finally:
-            self.after(0, lambda: self.btn.state(["!disabled"]))
+            self.after(0, lambda: self._btn.config(state="normal"))
 
-    def _show_error(self, msg):
-        self._set_status(msg, color=self.RED)
+    def _error(self, msg):
+        self._set_status(msg, self.RED)
         messagebox.showerror("Erro", msg)
-
-    def _clear_trees(self):
-        for tree in (self.tree_rh, self.tree_contatos, self.tree_deptos):
-            tree.delete(*tree.get_children())
-        self.info_rh.config(text="")
 
     def _populate(self, data: dict):
         deptos   = data.get("Departamentos") or []
         contatos = data.get("ContatosNaEmpresa") or []
-        rh_deptos = [d for d in deptos if is_rh_dept(d.get("Nome", ""))]
+        rh       = [d for d in deptos if is_rh_dept(d.get("Nome", ""))]
 
-        empresa = data.get("Razao", "")
-        self._set_status(f"✔ {empresa}", color="#166534")
+        self._set_status(f"✔  {data.get('Razao', '')}", "#166534")
 
-        # RH tab
-        if rh_deptos:
-            for d in rh_deptos:
-                self.tree_rh.insert("", "end", tags=("rh",),
-                    values=(d.get("Nome",""), d.get("RespNome","—"), d.get("RespEmail","—")))
-            self.tree_rh.tag_configure("rh", background=self.ORANGE_BG)
-            self.info_rh.config(
-                text=f"{len(rh_deptos)} departamento(s) RH encontrado(s) em {empresa}")
+        # Aba RH
+        if rh:
+            for d in rh:
+                self._tree_rh.insert("", "end", tags=("rh",), values=(
+                    d.get("Nome", ""),
+                    d.get("RespNome") or "—",
+                    d.get("RespEmail") or "—",
+                ))
+            self._tree_rh.tag_configure("rh", background=self.ORANGE_BG)
         else:
-            self.tree_rh.insert("", "end",
-                values=("Nenhum departamento RH encontrado.", "", ""))
-            self.info_rh.config(text="Sem departamentos RH nesta empresa.")
+            self._tree_rh.insert("", "end",
+                                 values=("Nenhum departamento RH encontrado.", "", ""))
 
-        # Contacts tab
+        # Aba Contatos
         for c in contatos:
-            self.tree_contatos.insert("", "end",
-                values=(c.get("Nome",""), c.get("E-mail","—"), c.get("Celular","—")))
+            self._tree_contatos.insert("", "end", values=(
+                c.get("Nome", ""),
+                c.get("E-mail") or "—",
+                c.get("Celular") or "—",
+            ))
 
-        # All departments tab
+        # Aba Todos os Departamentos
         for d in deptos:
-            self.tree_deptos.insert("", "end",
-                values=(d.get("ID",""), d.get("Nome",""),
-                        d.get("RespNome","—"), d.get("RespEmail","—")))
+            self._tree_deptos.insert("", "end", values=(
+                d.get("ID", ""),
+                d.get("Nome", ""),
+                d.get("RespNome") or "—",
+                d.get("RespEmail") or "—",
+            ))
 
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    App().mainloop()
